@@ -1,0 +1,12 @@
+{
+  "name": "caretrack-hospital-patient-record-system",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Local student mini project with SQLite persistence and C++ array algorithms",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=22.16.0"
+  }
+}

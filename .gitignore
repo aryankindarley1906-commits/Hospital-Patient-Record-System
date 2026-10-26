@@ -1,0 +1,12 @@
+# Local database and personal key material
+hospital.db
+hospital.db-shm
+hospital.db-wal
+patients_cpp.txt
+Hospital.exe
+Hospital
+
+# Logs and local editor/system files
+*.log
+.DS_Store
+Thumbs.db

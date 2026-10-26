@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Local hospital patient record management mini project">
+  <title>CareTrack | Hospital Patient Record System</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="script.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand-mark" aria-hidden="true">+</div>
+    <div class="brand-copy">
+      <h1>CareTrack</h1>
+      <p>Hospital Patient Record System</p>
+    </div>
+    <div class="top-actions" id="appActions" hidden>
+      <span class="signed-in">Signed in as <strong id="signedInUser">admin</strong></span>
+      <button type="button" id="changePasswordBtn" class="button button-ghost">Change password</button>
+      <button type="button" id="logoutBtn" class="button button-logout">Log out</button>
+    </div>
+  </header>
+
+  <main id="loginView" class="login-layout">
+    <section class="login-card">
+      <div class="login-icon" aria-hidden="true">⌑</div>
+      <p class="eyebrow">SECURE LOCAL ACCESS</p>
+      <h2>Welcome back</h2>
+      <p class="muted">Sign in to manage patient records on this computer.</p>
+      <form id="loginForm" class="stack-form">
+        <label>Username
+          <input id="loginUsername" name="username" autocomplete="username" minlength="3" maxlength="40" required>
+        </label>
+        <label>Password
+          <input id="loginPassword" name="password" type="password" autocomplete="current-password" maxlength="256" required>
+        </label>
+        <p id="loginError" class="form-error" role="alert"></p>
+        <button class="button button-primary button-wide" type="submit" id="loginBtn">Sign in</button>
+      </form>
+      <p class="small-note">First-run sign-in details are listed in README.md. Change the initial password after signing in.</p>
+    </section>
+  </main>
+
+  <main id="appView" class="page-shell" hidden>
+    <section class="intro">
+      <div>
+        <p class="eyebrow">PATIENT MANAGEMENT</p>
+        <h2>Patient records</h2>
+        <p class="muted">Records are saved in the local SQLite database. Search and sorting work on the loaded C++-style array data.</p>
+      </div>
+      <button type="button" id="addBtn" class="button button-primary">＋ Add patient</button>
+    </section>
+
+    <section class="stat-grid" aria-label="Patient summary">
+      <article class="stat-card"><span class="stat-label">Total patients</span><strong id="totalCount">0</strong><span class="stat-note">Saved records</span></article>
+      <article class="stat-card"><span class="stat-label">Under 18</span><strong id="minorCount">0</strong><span class="stat-note">Patients younger than 18</span></article>
+      <article class="stat-card"><span class="stat-label">Age 60+</span><strong id="seniorCount">0</strong><span class="stat-note">Senior patients</span></article>
+    </section>
+
+    <section class="content-card">
+      <div class="section-heading">
+        <div>
+          <h3>All patients</h3>
+          <p class="muted">Search by patient ID, name or disease.</p>
+        </div>
+        <span id="visibleCount" class="record-count">0 records</span>
+      </div>
+      <div class="toolbar">
+        <label class="search-box" for="searchInput"><span aria-hidden="true">⌕</span><input id="searchInput" type="search" placeholder="Search patients…" autocomplete="off"></label>
+        <label class="sort-control" for="sortSelect">Sort by
+          <select id="sortSelect">
+            <option value="id">Patient ID</option>
+            <option value="name">Name (A–Z)</option>
+            <option value="age">Age (youngest first)</option>
+          </select>
+        </label>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Patient</th><th>Age</th><th>Disease / condition</th><th>Contact</th><th>Action</th></tr></thead>
+          <tbody id="patientTable"></tbody>
+        </table>
+      </div>
+      <div id="emptyState" class="empty-state" hidden>
+        <div class="empty-icon" aria-hidden="true">⌕</div>
+        <h4>No matching patients</h4>
+        <p>Try another search or add a new patient record.</p>
+      </div>
+      <p id="statusMessage" class="status-message" role="status" aria-live="polite"></p>
+    </section>
+
+    <section id="formPanel" class="content-card form-card" hidden>
+      <div class="section-heading">
+        <div><h3 id="formHeading">Add patient</h3><p class="muted">Fields marked * are required.</p></div>
+        <button id="closeFormBtn" type="button" class="icon-button" aria-label="Close form">×</button>
+      </div>
+      <form id="patientForm">
+        <div class="form-grid">
+          <label>Patient ID *<input id="patientId" name="patientId" type="number" min="1" step="1" required></label>
+          <label>Full name *<input id="patientName" name="patientName" type="text" maxlength="80" required></label>
+          <label>Age *<input id="patientAge" name="patientAge" type="number" min="0" max="130" step="1" required></label>
+          <label>Disease / condition *<input id="patientDisease" name="patientDisease" type="text" maxlength="100" required></label>
+          <label class="full-width">Contact number *<input id="patientContact" name="patientContact" type="tel" maxlength="20" pattern="[0-9+() .-]{7,20}" title="Enter 7–20 digits or common phone number symbols." required></label>
+        </div>
+        <p id="formError" class="form-error" role="alert"></p>
+        <div class="form-actions">
+          <button class="button button-primary" type="submit" id="saveBtn">Save patient</button>
+          <button class="button button-secondary" type="button" id="cancelBtn">Cancel</button>
+        </div>
+      </form>
+    </section>
+
+    <section id="passwordPanel" class="content-card form-card" hidden>
+      <div class="section-heading">
+        <div><h3>Change password</h3><p class="muted">Use at least 12 characters.</p></div>
+        <button id="closePasswordBtn" type="button" class="icon-button" aria-label="Close password form">×</button>
+      </div>
+      <form id="passwordForm">
+        <div class="form-grid">
+          <label>Current password *<input id="currentPassword" type="password" autocomplete="current-password" maxlength="256" required></label>
+          <label>New password *<input id="newPassword" type="password" autocomplete="new-password" minlength="12" maxlength="256" required></label>
+          <label class="full-width">Confirm new password *<input id="confirmPassword" type="password" autocomplete="new-password" minlength="12" maxlength="256" required></label>
+        </div>
+        <p id="passwordError" class="form-error" role="alert"></p>
+        <div class="form-actions">
+          <button class="button button-primary" type="submit" id="changePasswordSubmit">Update password</button>
+          <button class="button button-secondary" type="button" id="cancelPasswordBtn">Cancel</button>
+        </div>
+      </form>
+    </section>
+
+    <p class="privacy-note"><strong>Local student project:</strong> The server only listens on this computer. Patient fields are encrypted in SQLite and access requires sign-in. Use fictional data for classroom demonstrations.</p>
+  </main>
+  <footer>CareTrack • C++ arrays, searching, sorting and record updates</footer>
+</body>
+</html>
