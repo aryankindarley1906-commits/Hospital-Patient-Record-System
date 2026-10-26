@@ -39,11 +39,6 @@ An intermediate student mini project with a web dashboard, local SQLite database
 
 ### First-run sign-in
 
-For a fresh database, the default local demo account is:
-
-- Username: `admin`
-- Password: `ChangeMe123!`
-
 Change it immediately after the first sign-in. The application also prints the first-run credentials in the server terminal. If you want to set your own initial credentials before the database is created, use PowerShell in the project folder:
 
 ```powershell
