@@ -2,11 +2,19 @@
   "name": "caretrack-hospital-patient-record-system",
   "version": "2.0.0",
   "private": true,
-  "description": "Local student mini project with SQLite persistence and C++ array algorithms",
+  "description": "Hospital Patient Record System with PostgreSQL persistence and encrypted patient records",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "test": "node test/test.js"
   },
   "engines": {
-    "node": ">=22.16.0"
+    "node": ">=20.0.0"
+  },
+  "dependencies": {
+    "dotenv": "^18.0.9",
+    "pg": "^8.23.1"
+  },
+  "devDependencies": {
+    "pg-mem": "^3.0.4"
   }
 }
