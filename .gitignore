@@ -1,7 +1,20 @@
-# Local database and personal key material
+# Dependencies
+node_modules/
+
+# Environment variables and secrets (NEVER commit these)
+.env
+.env.local
+.env.*.local
+
+# Vercel deployment cache and artifacts
+.vercel/
+
+# Legacy SQLite database and local key material
 hospital.db
 hospital.db-shm
 hospital.db-wal
+
+# C++ local executable and data files
 patients_cpp.txt
 Hospital.exe
 Hospital

@@ -1,92 +1,180 @@
 # CareTrack — Hospital Patient Record System
 
-An intermediate student mini project with a web dashboard, local SQLite database, sign-in, encrypted patient fields, and a separate C++ console version that uses parallel arrays and saves records to a file.
+CareTrack is a secure Hospital Patient Record System featuring a modern web interface, encrypted patient record storage, database-backed authentication, session management for serverless deployments on **Vercel**, and a separate standalone **C++** console program that demonstrates parallel array algorithms.
 
-## What is included
+---
 
-- Add, display, search, sort, and update patient records in the web interface.
-- SQLite persistence: web records remain after page refreshes and server restarts.
-- Sign-in, sign-out, and change-password forms.
-- Patient fields encrypted in SQLite using AES-256-GCM; passwords stored as salted `scrypt` hashes.
-- Server-side input validation, prepared SQL statements, same-origin checks, HTTP-only/SameSite session cookies, short idle sessions, basic sign-in rate limiting, and an audit log of account and record actions.
-- Localhost-only server binding so the web app is not directly exposed to other devices on the network.
-- A separate C++ implementation using parallel arrays, linear search, Bubble Sort, add/update functions, and persistent file storage.
+## What Is Included
 
-## Run the web project
+- **Web Dashboard**: Add, update, search, and sort patient records in an intuitive UI.
+- **Vercel Serverless Ready**: Designed for Vercel functions (`api/index.js`) without running a blocking `server.listen()` in serverless environments.
+- **Hosted PostgreSQL Persistence**: Patient data, user accounts, sessions, and audit logs persist reliably across serverless cold starts.
+- **AES-256-GCM Field Encryption**: Sensitive patient details are encrypted before entering the database using a 32-byte key from `DATA_ENCRYPTION_KEY`.
+- **Serverless Session Management**: Sessions are stored in the PostgreSQL database so users remain logged in across independent serverless requests.
+- **Security & Hardening**:
+  - Salted `scrypt` password hashing with `timingSafeEqual` comparison.
+  - CSRF protection via same-origin verification.
+  - HTTP-only, `SameSite=Strict` session cookies with 30-minute inactivity timeouts.
+  - Automatic brute-force sign-in rate limiting (5 failed attempts trigger a 1-minute cooldown).
+  - Comprehensive audit trail recording user logins, logouts, password changes, and patient modifications.
+- **Standalone C++ Implementation**: `Hospital.cpp` uses parallel arrays, linear search, Bubble Sort, and text file persistence (`patients_cpp.txt`).
 
-**Requirements:** Node.js 22.16 or newer. The server uses Node's built-in `node:sqlite` module, so no `npm install` or third-party packages are needed.
+---
 
-1. Extract this folder and open it in VS Code.
-2. Open a terminal **in this folder**.
-3. Check Node.js is available:
+## Quick Vercel Deployment Guide (Beginner-Friendly)
 
-   ```powershell
-   node --version
+Follow these steps to deploy CareTrack on Vercel with a free hosted PostgreSQL database:
+
+### Step 1: Create a Free Hosted PostgreSQL Database
+
+You can use any PostgreSQL provider (such as [Neon](https://neon.tech), [Supabase](https://supabase.com), or [Render](https://render.com)). Neon is recommended for serverless applications:
+
+1. Go to [https://neon.tech](https://neon.tech) and create a free account.
+2. Click **Create Project** (e.g., name it `caretrack-db`).
+3. Neon will display your **Connection Details**.
+4. Copy the connection string (looks like):
+   ```text
+   postgresql://alex:AbC123xyz@ep-cool-cloud-123456.us-east-2.aws.neon.tech/neondb?sslmode=require
    ```
+   *(Keep this connection string ready for Step 3).*
 
-4. Start the local server:
+> **Note:** The application automatically runs `CREATE TABLE IF NOT EXISTS` and seeds initial demo records the very first time it connects. You do **not** need to run any manual SQL migration scripts.
 
-   ```powershell
-   node server.js
-   ```
+---
 
-5. Open this address in Chrome or Edge: **http://127.0.0.1:3000**
-6. Sign in with the first-run account below, then change the password using the button in the page header.
-7. Use **Add patient**, search, the sort menu, and **Edit record** to test the features.
-8. Refresh the page or stop the server with `Ctrl+C` and start it again. Web records should still be present.
+### Step 2: Generate Your 32-Byte Encryption Key
 
-**Do not open `index.html` directly.** The web interface must be served by `server.js` so that the database API and sign-in functions are available.
+Patient records are encrypted using AES-256-GCM, which requires a **32-byte key** (represented as a 64-character hexadecimal string).
 
-### First-run sign-in
+Run this command in your computer terminal (PowerShell, Command Prompt, or Bash):
 
-Change it immediately after the first sign-in. The application also prints the first-run credentials in the server terminal. If you want to set your own initial credentials before the database is created, use PowerShell in the project folder:
-
-```powershell
-$env:ADMIN_USERNAME = "hospitaladmin"
-$env:ADMIN_PASSWORD = "ChooseYourOwn12+CharPassword"
-node server.js
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ```
 
-Those environment variables are only used to create the account on the first launch. Once the database already contains a user, change the password in the web interface instead.
+You will see output similar to:
+```text
+3f8a42b98216c59b6574c8df63426e257e1b54a29a0b925b42c94c921789c0de
+```
 
-### Where web data is saved
+Copy your generated string. **Never share this key publicly or commit it to GitHub.**
 
-- SQLite database: `hospital.db` in this project folder. It is created automatically when the server starts.
-- Encryption key: stored separately in your operating-system user configuration folder:
-  - Windows: `%APPDATA%\HospitalPatientSystem\data-key.bin`
-  - Linux: `~/.config/HospitalPatientSystem/data-key.bin` (or `$XDG_CONFIG_HOME/HospitalPatientSystem/data-key.bin` if set)
-  - macOS: `~/Library/Application Support/HospitalPatientSystem/data-key.bin`
+---
 
-The database stores the patient record payload encrypted. The key is deliberately kept outside the project folder. **Back up the database and key together.** If the key is lost or replaced, encrypted patient records cannot be recovered. Do not upload the database or key to a public repository.
+### Step 3: Configure Environment Variables in Vercel
 
-## Run the C++ version
+1. Log in to [Vercel](https://vercel.com) and go to your Project Dashboard.
+2. Navigate to **Settings** → **Environment Variables**.
+3. Add the following environment variables (all 4 are required for production):
 
-This is a separate console implementation of the same core operations. It stores patient records in `patients_cpp.txt` in the program's current working directory, so records can be loaded again after the program exits.
+| Variable Name | Required in Production? | Value / Description |
+|---|---|---|
+| `DATABASE_URL` | **Yes** | Your PostgreSQL connection string from Step 1 (e.g. `postgresql://...`) |
+| `DATA_ENCRYPTION_KEY` | **Yes** | The 64-character hex string generated in Step 2 |
+| `ADMIN_USERNAME` | **Yes** | Your desired initial admin username (3–40 alphanumeric/dot/underscore/hyphen characters) |
+| `ADMIN_PASSWORD` | **Yes** | Your secure initial admin password (minimum 12 characters; default passwords are not allowed) |
 
-From the project folder, compile with g++:
+4. Make sure the checkboxes for **Production**, **Preview**, and **Development** are checked, then click **Save**.
+
+---
+
+### Step 4: Deploy / Redeploy on Vercel
+
+1. Push your updated code to your GitHub repository (see the checklist below).
+2. In Vercel, go to the **Deployments** tab.
+3. Click the three dots `...` next to the latest deployment and select **Redeploy** (or Vercel will automatically deploy the new commit from GitHub).
+4. Once deployment finishes, open your Vercel production URL (e.g., `https://your-project.vercel.app`).
+
+---
+
+### Step 5: Sign In to the Dashboard
+
+When the app launches for the first time, sign in with the credentials you configured in Vercel:
+
+- **Username**: The value you set in `ADMIN_USERNAME`
+- **Password**: The value you set in `ADMIN_PASSWORD`
+
+> **Security Note**: Default demo credentials are blocked in production. You can change your password at any time using the **Change password** button in the dashboard header.
+
+---
+
+## Local Development & Testing
+
+You can also run and test the project locally on your machine.
+
+### 1. Install Dependencies
+
+```powershell
+npm install
+```
+
+### 2. Configure Local Environment Variables
+
+Create a `.env` file in the project root:
+
+```env
+DATABASE_URL=postgresql://postgres:your_password@localhost:5432/hospital_db
+DATA_ENCRYPTION_KEY=3f8a42b98216c59b6574c8df63426e257e1b54a29a0b925b42c94c921789c0de
+PORT=3000
+```
+
+### 3. Run Automated Tests
+
+To test encryption, authentication, session persistence, and all API routes:
+
+```powershell
+npm test
+```
+
+### 4. Start Local Development Server
+
+```powershell
+npm start
+```
+
+Visit **http://127.0.0.1:3000** in your browser.
+
+---
+
+## Standalone C++ Console Program
+
+The C++ program is an independent console implementation that stores data in `patients_cpp.txt`.
+
+### Compile with g++:
 
 ```powershell
 g++ -std=c++17 -Wall -Wextra Hospital.cpp -o Hospital.exe
 .\Hospital.exe
 ```
 
-To test persistence, add a record, choose Exit, then run `.\Hospital.exe` again on Windows (or `./Hospital` on Linux/macOS). The patient record should still be present. The `patients_cpp.txt` file is created automatically; keep it if you want to keep the C++ console records.
+*(On Linux / macOS: `g++ -std=c++17 -Wall -Wextra Hospital.cpp -o Hospital && ./Hospital`)*
 
-The C++ console program uses parallel arrays and a text file. It is a separate implementation and does not read from or write to the web app's encrypted SQLite database.
+---
 
-## Suggested test cases
+## GitHub Upload Checklist
 
-1. Sign in with the demo credentials and change the password.
-2. Sign out; verify that patient records cannot be viewed before signing in.
-3. Add a patient with a new ID; verify it appears in the table.
-4. Add the same ID again; verify the server rejects the duplicate.
-5. Search by ID, name, and disease.
-6. Sort by ID, name, and age.
-7. Edit a record and confirm the updated values remain after page refresh.
-8. Try an invalid age (such as `-1` or `131`) and an invalid contact number; verify validation rejects it.
-9. Stop and restart the web server; verify records remain saved.
-10. In the C++ console program, add a patient, exit, reopen, and verify the record is loaded from `patients_cpp.txt`.
+When pushing or uploading your project to GitHub, **only upload the files listed below**. Sensitive keys and generated binaries must remain excluded.
 
-## Security and deployment note
+###  Files to Upload to GitHub:
 
-This is a **local educational project**, not a certified hospital information system. It improves the basic prototype with database persistence, encrypted patient fields, password hashing, sign-in, session handling, and audit logging, but it has not undergone professional security testing or healthcare compliance review. The server uses plain HTTP on loopback only; do not expose it to a network or use it for real patient information without a qualified security review, HTTPS, tested backups and recovery, access-management controls, and applicable legal/compliance safeguards.
+- `api/index.js` *(Vercel Serverless function entry point)*
+- `db.js` *(Database connection, schema setup, encryption, sessions)*
+- `server.js` *(API route handlers & local development HTTP server)*
+- `index.html` *(Dashboard user interface)*
+- `style.css` *(Styling and design)*
+- `script.js` *(Client-side logic & API interactions)*
+- `Hospital.cpp` *(Standalone C++ implementation)*
+- `vercel.json` *(Vercel routing and rewrite rules)*
+- `package.json` *(Node.js dependencies and test scripts)*
+- `package-lock.json` *(Pinned dependency versions)*
+- `.gitignore` *(Excludes secret files and build artifacts)*
+- `README.md` *(Documentation and setup guide)*
+- `test/test.js` *(Automated test suite)*
+
+### ❌ Files to NEVER Upload to GitHub (Already in `.gitignore`):
+
+- `.env` or `.env.local` *(Contains your live database credentials and encryption keys!)*
+- `node_modules/` *(Installed packages; Vercel installs these automatically during build)*
+- `hospital.db`, `hospital.db-shm`, `hospital.db-wal` *(Old local SQLite database files)*
+- `Hospital.exe` or `Hospital` *(Compiled C++ binary executable)*
+- `patients_cpp.txt` *(Local C++ data file)*
